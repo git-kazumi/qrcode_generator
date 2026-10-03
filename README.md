@@ -1,6 +1,8 @@
 # QRコード生成ツール
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+![Version](https://img.shields.io/badge/version-1.1.0-blue.svg)
+![Python](https://img.shields.io/badge/python-3.10%2B%20(tested%203.13)-blue.svg)
 
 URL から簡単に QRコードを生成・保存できるシンプルなデスクトップアプリケーション。完全オフライン動作で、直感的なGUIとファイル保存機能を備えています。
 
@@ -15,7 +17,7 @@ URL から簡単に QRコードを生成・保存できるシンプルなデス�
 
 ## 必要な環境
 
-- Python 3.9以上
+- Python 3.10以上（動作確認・推奨バージョンは **Python 3.13**）
 - tkinter（通常Pythonに同梱）
 - Pillow ライブラリ
 - qrcode ライブラリ
@@ -28,10 +30,45 @@ git clone https://github.com/git-kazumi/qrcode-generator.git
 cd qrcode-generator
 ```
 
-### 依存ライブラリのインストール
+### 仮想環境の作成（推奨）
 ```bash
-pip install qrcode[pil] pillow
+# Windows（Python Install Manager）
+py -V:3.13 -m venv .venv
+.venv\Scripts\Activate.ps1
+
+# macOS / Linux
+python3.13 -m venv .venv
+source .venv/bin/activate
 ```
+
+### 依存ライブラリのインストール
+
+依存パッケージは、用途に応じて2つのファイルに分けています。
+
+| ファイル | 対象 | 内容 |
+|----------|------|------|
+| `requirements.txt` | アプリを実行する方 | qrcode・Pillow とその依存パッケージ |
+| `requirements-dev.txt` | 開発・exe化を行う方 | `requirements.txt` の内容 + 開発用ツール |
+
+#### アプリを実行する場合
+
+```bash
+pip install -r requirements.txt
+```
+
+#### 開発・exe化を行う場合
+
+```bash
+pip install -r requirements-dev.txt
+```
+
+`requirements-dev.txt` は先頭で `requirements.txt` を読み込んでいるため、実行用のパッケージも一緒にインストールされます。追加される開発用ツールは以下のとおりです。
+
+| ツール | 用途 |
+|--------|------|
+| [Nuitka](https://nuitka.net/) | exeファイルの作成 |
+| [zstandard](https://pypi.org/project/zstandard/) | Nuitka（onefile形式）での圧縮 |
+| [pip-audit](https://pypi.org/project/pip-audit/) | 依存パッケージの脆弱性チェック |
 
 ## 使い方
 
@@ -64,11 +101,57 @@ python qrcode_generator.py
 | 右クリック（QRコード上） | コンテキストメニューを表示 |
 | PNG として保存 | PNG 形式で保存ダイアログを開く |
 | JPG として保存 | JPG 形式で保存ダイアログを開く |
+| クリップボードにコピー | 未実装（PNG/JPG での保存方法を案内するダイアログを表示） |
 
 ### ボタン
 
 - **QRコード生成** - テキストボックスの URL からQRコードを生成
 - **クリア** - 入力欄とQRコード表示をリセット
+
+## exeファイルの作成（Windows）
+
+[Nuitka](https://nuitka.net/) を使用して、単体で動作するexeファイルを作成できます。
+
+### 事前準備
+
+開発用ツールをインストールしておきます。
+
+```powershell
+pip install -r requirements-dev.txt
+```
+
+Python 3.13 では Nuitka の MinGW64 が使用できないため、**Visual Studio Build Tools**（C++ によるデスクトップ開発）が必要です。
+
+```powershell
+winget install Microsoft.VisualStudio.2022.BuildTools --override "--wait --passive --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended"
+```
+
+### ビルド
+
+```powershell
+# 実行用パッケージの脆弱性チェック（問題がないことを確認してからビルドする）
+pip-audit -r requirements.txt
+
+# exeファイルの作成
+python -m nuitka `
+  --mode=onefile `
+  --windows-console-mode=disable `
+  --enable-plugin=tk-inter `
+  --msvc=latest `
+  --output-dir=build `
+  --output-filename=qrcode_generator.exe `
+  --onefile-tempdir-spec="{CACHE_DIR}/QRCodeGenerator/{VERSION}" `
+  --product-name="QRコード生成ツール" `
+  --file-version=1.1.0 `
+  --product-version=1.1.0 `
+  --assume-yes-for-downloads `
+  --remove-output `
+  qrcode_generator.py
+```
+
+`build\qrcode_generator.exe` が作成されます。
+
+> ⚠️ `--file-version` / `--product-version` はリリースごとに必ず更新してください。展開先フォルダがバージョンごとに分かれているため、更新しないと古いファイルが使われる場合があります。
 
 ## 動作仕様
 
@@ -88,35 +171,45 @@ python qrcode_generator.py
 | 状況 | 動作 |
 |------|------|
 | URL未入力 | 警告ダイアログを表示 |
-| 無効なURL | QRコード生成時に警告 |
+| URLの形式でない文字列 | 確認ダイアログを表示（「はい」でそのまま生成、「いいえ」で中止） |
+| QRコード生成失敗 | エラーダイアログを表示 |
 | ファイル保存失敗 | エラーダイアログを表示 |
+
+URLの形式は、`http://` または `https://` で始まり、ホスト名（ドメイン）を含むものとして判定します。QRコード自体はURL以外の文字列も格納できるため、形式が異なる場合も確認のうえで生成できます。
 
 ## 出力例
 
 ```
-QRコード生成ツール
-┌────────────────────────────────────┐
-│ URL: https://github.com           │
-│        [生成] [クリア]              │
-├────────────────────────────────────┤
-│                                    │
-│           ███████████              │
-│           ███████████              │
-│           ███████████              │
-│                                    │
-├────────────────────────────────────┤
-│ ✓ QRコード生成完了: https://g...  │
+            QRコード生成ツール
+┌─ URL入力 ──────────────────────────┐
+│ URL: [https://github.com         ] │
 └────────────────────────────────────┘
+       [QRコード生成] [クリア]
+┌─ QRコード ─────────────────────────┐
+│                                    │
+│           ███████████              │
+│           ███████████              │
+│           ███████████              │
+│                                    │
+└────────────────────────────────────┘
+ ✓ QRコード生成完了: https://github.com...
 ```
 
 ## ソースコード構成
 
 ```python
-generate_qrcode()           # URL→QRコード生成
-display_qrcode_on_canvas()  # QRコードを画面に表示
-save_as_png()               # PNG形式で保存
-save_as_jpg()               # JPG形式で保存
-show_context_menu()         # 右クリックメニュー表示
+QRCodeGeneratorApp          # アプリケーション本体のクラス
+├ setup_ui()                # 画面部品の配置
+├ is_valid_url(text)        # URLの形式かどうかを判定
+├ generate_qrcode()         # URL→QRコード生成
+├ display_qrcode_on_canvas()# QRコードを画面に表示
+├ clear_qrcode()            # 入力欄と表示をリセット
+├ show_context_menu()       # 右クリックメニュー表示
+├ save_as_png()             # PNG形式で保存
+├ save_as_jpg()             # JPG形式で保存
+└ copy_to_clipboard()       # 未実装（保存方法を案内）
+
+main()                      # 起動処理
 ```
 
 ## カスタマイズ例
@@ -157,7 +250,7 @@ title_label = ttk.Label(
 
 ## 日本語対応
 
-このアプリケーションは日本語環境を前提としています。フォントは`Arial`と`MS Gothic`のフォールバックを使用しています。
+このアプリケーションは日本語環境を前提としています。タイトルのみ`Arial`を指定し、それ以外はOS標準のフォント（ttkの既定フォント）を使用しています。`Arial`に含まれない日本語の文字は、OSが自動的に日本語フォントで代替表示します。
 
 ## ライセンス
 
@@ -182,17 +275,16 @@ Copyright (c) 2026 大杉一実 (ohsugi kazumi)
 sudo apt-get install python3-tk
 
 # macOS (Homebrew)
-brew install python-tk@3.11
-
-# Windows
-pip install tk
+brew install python-tk@3.13
 ```
+
+Windows では、tkinter は pip ではインストールできません（PyPI の `tk` は tkinter とは無関係のパッケージです）。Python をインストールし直し、オプション「**tcl/tk and IDLE**」を有効にしてください。
 
 ### Pillow/qrcode のインストールに失敗する場合
 
 ```bash
 pip install --upgrade pip
-pip install qrcode[pil] pillow --upgrade
+pip install -r requirements.txt
 ```
 
 ### QRコードが表示されない
@@ -201,10 +293,32 @@ pip install qrcode[pil] pillow --upgrade
 - ウィンドウをリサイズしてキャンバスを大きくする
 - クリアボタンで一度リセットして再度生成
 
+### exe作成時に「cannot locate suitable C compiler」と表示される
+
+Python 3.13 では MinGW64 が使用できません。「[exeファイルの作成（Windows）](#exeファイルの作成windows)」の事前準備に従って Visual Studio Build Tools をインストールし、`--msvc=latest` を指定してください。
+
 ## 貢献
 
 バグ報告や機能提案は[Issues](https://github.com/git-kazumi/qrcode-generator/issues)セクションにお願いします。
 
+## 更新履歴
+
+### v1.1.0 (2026-10-03)
+- 開発・動作確認環境を Python 3.11 から **Python 3.13** へ移行
+- 動作環境を Python 3.10以上に変更（Pillow 12 系が Python 3.9 に非対応のため）
+- URLの形式でない文字列を入力した場合に、生成してよいか確認するダイアログを追加
+- 例外処理のコメントを実際の処理内容に合わせて修正
+- 依存パッケージを更新し、実行用の `requirements.txt` と開発用の `requirements-dev.txt` に分割
+- colorama を Windows 環境でのみインストールするよう変更（qrcode の Windows 専用の依存のため）
+- 脆弱性チェックツール [pip-audit](https://pypi.org/project/pip-audit/) を開発環境に導入
+- Nuitka によるexeファイル作成手順を追加（Python 3.13 対応のため MSVC を使用）
+- README の記載をソースコードの実際の動作に合わせて修正（フォント、エラーハンドリング、右クリックメニュー、画面構成、Windows での tkinter の導入方法）
+
+### v1.0.0 (2026-04-16)
+- 初回リリース
+- URL からの QRコード生成・表示
+- PNG / JPG 形式での保存（右クリックメニュー）
+
 ---
 
-**最終更新**: 2026年4月
+**最終更新**: 2026年10月
