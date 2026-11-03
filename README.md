@@ -1,8 +1,8 @@
 # QRコード生成ツール
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-![Version](https://img.shields.io/badge/version-1.1.0-blue.svg)
-![Python](https://img.shields.io/badge/python-3.10%2B%20(tested%203.13)-blue.svg)
+![Version](https://img.shields.io/badge/version-1.1.1-blue.svg)
+![Python](https://img.shields.io/badge/python-3.11%2B%20(tested%203.13)-blue.svg)
 
 URL から簡単に QRコードを生成・保存できるシンプルなデスクトップアプリケーション。完全オフライン動作で、直感的なGUIとファイル保存機能を備えています。
 
@@ -17,7 +17,7 @@ URL から簡単に QRコードを生成・保存できるシンプルなデス�
 
 ## 必要な環境
 
-- Python 3.10以上（動作確認・推奨バージョンは **Python 3.13**）
+- Python 3.11以上（動作確認・推奨バージョンは **Python 3.13**）
 - tkinter（通常Pythonに同梱）
 - Pillow ライブラリ
 - qrcode ライブラリ
@@ -142,8 +142,8 @@ python -m nuitka `
   --output-filename=qrcode_generator.exe `
   --onefile-tempdir-spec="{CACHE_DIR}/QRCodeGenerator/{VERSION}" `
   --product-name="QRコード生成ツール" `
-  --file-version=1.1.0 `
-  --product-version=1.1.0 `
+  --file-version=1.1.1 `
+  --product-version=1.1.1 `
   --assume-yes-for-downloads `
   --remove-output `
   qrcode_generator.py
@@ -303,6 +303,12 @@ Python 3.13 では MinGW64 が使用できません。「[exeファイルの作�
 
 ## 更新履歴
 
+### v1.1.1 (2026-11-03)
+- Pillow を 12.3.0 から 13.0.0 へ更新（`requirements.txt`）
+- 動作環境を Python 3.11以上に変更（Pillow 13.0.0 が Python 3.11 以上を必要とするため）
+- アプリ本体（`qrcode_generator.py`）の機能・動作に変更なし
+- Nuitka でのexe作成時のバージョン指定（`--file-version` / `--product-version`）を 1.1.1 に更新
+
 ### v1.1.0 (2026-10-03)
 - 開発・動作確認環境を Python 3.11 から **Python 3.13** へ移行
 - 動作環境を Python 3.10以上に変更（Pillow 12 系が Python 3.9 に非対応のため）
@@ -321,4 +327,4 @@ Python 3.13 では MinGW64 が使用できません。「[exeファイルの作�
 
 ---
 
-**最終更新**: 2026年10月
+**最終更新**: 2026年11月
